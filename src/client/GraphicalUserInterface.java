@@ -21,4 +21,11 @@ public interface GraphicalUserInterface {
      */
     public void updateOnlineNicks(String[] list);
 
+    /**
+     * Alinan hata mesajinin ekranda goruntulenmesini saglar
+     * 
+     * @param message
+     *            hata mesaji
+     */
+    public void displayError(String message);
 }

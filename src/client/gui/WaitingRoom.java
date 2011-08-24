@@ -157,14 +157,6 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
     }
 
-    public void displayMessage(String from, String message, boolean isPrivate) {
-
-    }
-
-    public void updateOnlineNicks(String[] list) {
-
-    }
-
     private void queueSelected() {
         // TODO join the queue
     }
@@ -175,5 +167,17 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
     private void quit() {
         // TODO send disconnect signal
+    }
+
+    public void displayMessage(String from, String message, boolean isPrivate) {
+
+    }
+
+    public void updateOnlineNicks(String[] list) {
+
+    }
+
+    public void displayError(String message) {
+
     }
 }
