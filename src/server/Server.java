@@ -98,7 +98,7 @@ public class Server {
 				params = message.split(" ");
 				if (params.length == 3 && params[0].equals("NICK")
 						&& params[1].equals("SET")){
-					cmdNICK(params[2]);
+					cmdNICKSET(params[2]);
 				}
 			}
 
@@ -107,7 +107,7 @@ public class Server {
 			}
 
 		}
-		private void cmdNICK(String nick) {
+		private void cmdNICKSET(String nick) {
 			if(hasNick(nick)){
 				cmdERR(output, "Nick already in use");
 				return;
@@ -115,6 +115,7 @@ public class Server {
 			nickAccepted = true;
 			this.nick = nick;
 			playerTable.put(this.nick, this);
+			cmdNICKACCEPTED(output, nick);
 			cmdMSG("SERVER", String.format("%s connected to server.", nick));
 			log.log(String.format("%s connectted to server.", nick));
 		}
@@ -129,7 +130,7 @@ public class Server {
 	
 	private void invokeMethod(String command, String from, String param) throws Exception{
 		String name = "cmd" + command;
-		Method method = getClass().getMethod(name, String.class, String.class);
+		Method method = this.getClass().getMethod(name, String.class, String.class);
 		method.invoke(getClass(), param);
 	}
 	
@@ -143,7 +144,10 @@ public class Server {
 		
 	}
 	
-
+	private void cmdNICKACCEPTED(Formatter output, String nick){
+		output.format("NICK ACCEPTED %s", nick);
+		output.flush();
+	}
 	private void cmdMSG(String from, String param) {
 		
 		Iterator<Player> it = playerTable.values().iterator();
