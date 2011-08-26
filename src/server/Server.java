@@ -73,7 +73,7 @@ public class Server {
 			try {
 
 				this.socket = socket;
-				this.output = output;
+				this.output = new Formatter(socket.getOutputStream());
 				output.flush();
 				this.input = new Scanner(socket.getInputStream());
 				nickAccepted = false;
