@@ -28,4 +28,22 @@ public interface GraphicalUserInterface {
      *            hata mesaji
      */
     public void displayError(String message);
+
+    /**
+     * Serverdan gelen cesitli mesajlarin/uyarilarin ekranda goruntulenmesini
+     * saglar
+     * 
+     * @param message
+     *            server mesaji
+     */
+    public void displayServerMessage(String message);
+
+    /**
+     * Server tarafindaki aktif oyunlarin listesini ekranda gosterir. Boylece
+     * oyuncu bu oyunlardan birini secerek sirasina girer.
+     * 
+     * @param games
+     *            oyunlarin listesi
+     */
+    public void setAvailableGames(String[] games);
 }
