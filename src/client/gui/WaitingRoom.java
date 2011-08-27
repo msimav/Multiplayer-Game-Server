@@ -30,8 +30,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import swing2swt.layout.FlowLayout;
+import client.Client;
 
-public class WaitingRoom implements client.GraphicalUserInterface {
+public class WaitingRoom implements client.GraphicalUserInterface, Runnable {
 
     private client.Client client;
 
@@ -42,23 +43,9 @@ public class WaitingRoom implements client.GraphicalUserInterface {
     private Text messageBox;
 
     /**
-     * Launch the application.
-     * 
-     * @param args
-     */
-    public static void main(String[] args) {
-        try {
-            WaitingRoom window = new WaitingRoom();
-            window.open();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Open the window.
      */
-    public void open() {
+    public void run() {
         Display display = Display.getDefault();
         createContents();
         shlWaitingRoom.open();
@@ -68,6 +55,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
                 display.sleep();
             }
         }
+        display.dispose();
     }
 
     /**
@@ -130,8 +118,6 @@ public class WaitingRoom implements client.GraphicalUserInterface {
         lblQueue.setText("Queue: ");
 
         gameList = new Combo(composite, SWT.READ_ONLY);
-        gameList.setItems(new String[] { "Satranç", "Tic Toc Toe", "Tavla" });
-        // TODO kalkacak
 
         Button btnJoin = new Button(composite, SWT.NONE);
         btnJoin.addSelectionListener(new SelectionAdapter() {
@@ -160,6 +146,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
         chatBox = new StyledText(scrolledComposite, SWT.FULL_SELECTION
                 | SWT.READ_ONLY | SWT.V_SCROLL);
+        chatBox.setText("");
         scrolledComposite.setContent(chatBox);
         scrolledComposite.setMinSize(chatBox.computeSize(SWT.DEFAULT,
                 SWT.DEFAULT));
@@ -232,10 +219,9 @@ public class WaitingRoom implements client.GraphicalUserInterface {
      */
     private void sendMessage() {
         // TODO ozel mesaj
-        // client.sendMessage(messageBox.getText());
-        displayMessage("mustafa", messageBox.getText() + "\n", false);
-        updateOnlineNicks(messageBox.getText().split(" "));
+        client.sendMessage(messageBox.getText());
         messageBox.setText("");
+        messageBox.setFocus();
     }
 
     /**
@@ -243,7 +229,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
      * gonderilecek
      */
     private void quit() {
-        // client.disconnect();
+        client.disconnect();
         shlWaitingRoom.dispose();
     }
 
@@ -306,7 +292,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
     }
 
     public void displayMessage(String from, String message, boolean isPrivate) {
-        int nickStart = chatBox.getText().length();
+        int nickStart = chatBox.getCharCount();
         int msgStart = nickStart + from.length() + 13;
         // nick
         StyleRange nick = new StyleRange();
@@ -335,7 +321,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
     public void displayError(String message) {
         StyleRange styleRange = new StyleRange();
-        styleRange.start = chatBox.getText().length(); // gozden gecir
+        styleRange.start = chatBox.getCharCount();
         styleRange.length = message.length();
         styleRange.foreground = shlWaitingRoom.getDisplay().getSystemColor(
                 SWT.COLOR_DARK_RED);
@@ -349,7 +335,7 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
     public void displayServerMessage(String message) {
         StyleRange styleRange = new StyleRange();
-        styleRange.start = chatBox.getText().length();
+        styleRange.start = chatBox.getCharCount();
         styleRange.length = message.length();
         styleRange.foreground = shlWaitingRoom.getDisplay().getSystemColor(
                 SWT.COLOR_DARK_GREEN);
@@ -363,5 +349,13 @@ public class WaitingRoom implements client.GraphicalUserInterface {
 
     public void setAvailableGames(String[] games) {
         gameList.setItems(games);
+    }
+
+    public void start(Client aClient) {
+        this.client = aClient;
+        shlWaitingRoom.getDisplay().asyncExec(this);
+        Thread guiThread = shlWaitingRoom.getDisplay().getThread();
+        guiThread.start();
+
     }
 }

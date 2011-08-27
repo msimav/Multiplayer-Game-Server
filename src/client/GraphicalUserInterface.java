@@ -46,4 +46,12 @@ public interface GraphicalUserInterface {
      *            oyunlarin listesi
      */
     public void setAvailableGames(String[] games);
+
+    /**
+     * Client, gui'ye kendisini gondererek guinin baslamasini saglar.
+     * 
+     * @param aClient
+     *            client'in referansi
+     */
+    public void start(Client aClient);
 }

@@ -1,5 +1,7 @@
 package client;
 
+import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -9,40 +11,62 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Formatter;
 import java.util.HashMap;
-import java.util.Scanner;
+
+import client.gui.WaitingRoom;
 
 public class Client {
     private GraphicalUserInterface gui;
     private String nick;
     private Formatter outputStream;
-    private Scanner inputStream;
+    private BufferedReader inputStream;
     private Socket sock;
     private String[] onlines;
     private HashMap<String, Integer> games;
 
-    public Client(String server, int port) {
+    public Client(String server, int port, String aNick,
+            GraphicalUserInterface aGui) {
         // TODO daha duzgun exception handling yapilacak
         games = new HashMap<String, Integer>();
+        nick = null;
+        gui = aGui;
+
         try {
             sock = new Socket(server, port);
             outputStream = new Formatter(new OutputStreamWriter(
                     sock.getOutputStream()));
-            inputStream = new Scanner(new InputStreamReader(
+            inputStream = new BufferedReader(new InputStreamReader(
                     sock.getInputStream()));
 
             // Server'dan gelen baglantilari dinleyen thread
             Thread listener = new Thread(new Runnable() {
                 public void run() {
                     String input;
+                    System.out.println("Thread icinde 1");
+                    try {
+                        while (true) {
+                            input = inputStream.readLine();
+                            System.out.println("dongu input: " + input);
+                            handleInput(input);
 
-                    while ((input = inputStream.nextLine()) != null)
-                        handleInput(input);
+                        }
+                    } catch (EOFException e) {
+                        gui.displayError("Connection lost.");
+                    } catch (IOException e) {
+                        gui.displayError(e.getMessage());
+                    }
+                    System.out.println("dongu bitti");
                 }
             });
             listener.start();
 
+            // TODO gui ile baglanacak
+            sendCommand(String.format("NICK SET %s", aNick));
+            System.out.println("Nick: " + nick);
+
             sendCommand("NAMES"); // Online listesini alacak
             sendCommand("GAMES"); // Aktif oyunlarin listesini alacak
+
+            gui.start(this); // TODO gozden gecir
         } catch (UnknownHostException e) {
             gui.displayError(e.getMessage());
         } catch (IOException e) {
@@ -57,6 +81,8 @@ public class Client {
     }
 
     private void handleInput(String input) {
+        if (input == null)
+            return;
         // TODO exception handling
         String cmd = "cmd" + input.split(" ")[0].trim();
         String rest = input.substring(input.indexOf(' ')).trim();
@@ -110,6 +136,8 @@ public class Client {
 
     @SuppressWarnings("unused")
     private void cmdGAMES(String arg) {
+        games = new HashMap<String, Integer>();
+        // Oyun eksilirse diye yeniden hashmap olusturduk.
         String[] game = arg.split(",");
         for (int i = 0; i < game.length; i++) {
             String name = game[i].split("=")[0].trim();
@@ -129,6 +157,16 @@ public class Client {
             gui.displayError("Your nick isn't accepted.");
     }
 
+    @SuppressWarnings("unused")
+    private void cmdERR(String arg) {
+        gui.displayError(arg);
+    }
+
+    @SuppressWarnings("unused")
+    private void cmdINFO(String arg) {
+        gui.displayServerMessage(arg);
+    }
+
     /***************
      * GUI METHODS *
      ***************/
@@ -138,6 +176,13 @@ public class Client {
      */
     public void disconnect() {
         sendCommand("DISCONNECT");
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            // TODO handle
+        }
+        outputStream.close();
+        System.exit(0);
     }
 
     /**
@@ -156,6 +201,8 @@ public class Client {
             sendCommand(String.format("PRIVMSG %s %s %s", to, nick, message));
         } else
             sendCommand(String.format("MSG %s %s", nick, message));
+        System.out.println(String.format("MSG %s %s", nick, message));
+
     }
 
     /**
@@ -192,5 +239,20 @@ public class Client {
             }
             sendCommand(cmd);
         }
+    }
+
+    /**
+     * Kullanicinin nick'ini degistirmesini saglayan method.
+     * 
+     * @param nick
+     *            yeni nick
+     */
+    public void setNick(String nick) {
+        sendCommand(String.format("NICK SET %s", nick));
+    }
+
+    // ////////////////// MAIN ///////////////////// //
+    public static void main(String[] args) {
+        new Client("localhost", 5001, "mustafa", new WaitingRoom());
     }
 }
