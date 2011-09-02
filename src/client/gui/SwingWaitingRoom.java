@@ -2,6 +2,7 @@ package client.gui;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Event;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -10,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Date;
 
 import javax.swing.JButton;
@@ -25,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -65,31 +69,41 @@ public class SwingWaitingRoom implements client.GraphicalUserInterface {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// TODO C-q ile programi kapatma calismiyor
-				if (e.getKeyCode() == KeyEvent.VK_C && e.isControlDown())
-					quit();
-			}
-		});
 		frame.setMinimumSize(new Dimension(650, 450));
 		frame.setSize(new Dimension(650, 450));
 		frame.setTitle("Waiting Room");
 		frame.setBounds(100, 100, 647, 452);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				super.windowClosing(e);
+				quit();
+			}
+		});
 
 		JMenuBar menuBar = new JMenuBar();
 		frame.setJMenuBar(menuBar);
 
 		JMenu mnFile = new JMenu("File");
+		mnFile.setMnemonic('F');
 		menuBar.add(mnFile);
 
 		JMenuItem mntmRunCommand = new JMenuItem("Run Command");
+		mntmRunCommand.setMnemonic('R');
+		mntmRunCommand.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,
+				Event.ALT_MASK));
+		mntmRunCommand.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				runCommand();
+			}
+		});
 		mnFile.add(mntmRunCommand);
 
 		JMenuItem mntmQuit = new JMenuItem("Quit");
+		mntmQuit.setMnemonic('Q');
+		mntmQuit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
+				Event.CTRL_MASK));
 		mntmQuit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				quit();
@@ -98,10 +112,18 @@ public class SwingWaitingRoom implements client.GraphicalUserInterface {
 		mnFile.add(mntmQuit);
 
 		JMenu mnHelp = new JMenu("Help");
+		mnHelp.setMnemonic('H');
 		menuBar.add(mnHelp);
 
 		JMenuItem mntmAbout = new JMenuItem("About");
+		mntmAbout.setMnemonic('A');
+		mntmAbout.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				about();
+			}
+		});
 		mnHelp.add(mntmAbout);
+
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		frame.setContentPane(contentPane);
@@ -393,8 +415,31 @@ public class SwingWaitingRoom implements client.GraphicalUserInterface {
 	 * gonderilecek
 	 */
 	private void quit() {
+		frame.setVisible(false);
+		frame.dispose();
 		client.disconnect();
 		System.exit(0);
 	}
 
+	/**
+	 * About ekrani
+	 */
+	private void about() {
+		String title = "About";
+		String msg = "Error! Keyboard not found.\nPress Enter to continue.";
+		JOptionPane.showMessageDialog(null, msg, title,
+				JOptionPane.PLAIN_MESSAGE);
+	}
+
+	/**
+	 * Isini bilen kullanicilar icin server'a direkt komut gondermeye yarayan
+	 * method
+	 */
+	private void runCommand() {
+		String cmd = JOptionPane.showInputDialog(null,
+				"Calistirilacak komutu girin", "Run Command",
+				JOptionPane.PLAIN_MESSAGE);
+		if (cmd != null)
+			client.sendCommand(cmd);
+	}
 }

@@ -68,8 +68,9 @@ public class Client {
 		}
 	}
 
-	private void sendCommand(String cmd) {
+	public void sendCommand(String cmd) {
 		// TODO format'i daha verimli kullanmanin yollarini dusun
+		// public olmasi sorun yaratabilir.
 		outputStream.format("%s\n", cmd);
 		outputStream.flush();
 	}
@@ -169,14 +170,19 @@ public class Client {
 	 * Server ile olan baglantinin kesilmesini saglar
 	 */
 	public void disconnect() {
+		// TODO program calismaya devam ediyor.
 		sendCommand("DISCONNECT");
 		try {
 			inputStream.close();
+			outputStream.close();
+			sock.close();
 		} catch (IOException e) {
-			// TODO handle
+			// daha detayli birsey yapilabilir
+			System.err
+					.println("Unexpected error happened while disconnecting...");
+		} finally {
+			System.exit(0);
 		}
-		outputStream.close();
-		System.exit(0);
 	}
 
 	/**
@@ -189,7 +195,7 @@ public class Client {
 	public void sendMessage(String message) {
 		// TODO ozel mesaj
 		if (message.contains("to:")) {
-			String to = message.substring(message.indexOf("to:"),
+			String to = message.substring(message.indexOf("to:") + 3,
 					message.indexOf(' '));
 			message = message.substring(message.indexOf(' '));
 			sendCommand(String.format("PRIVMSG %s %s %s", to, nick, message));
