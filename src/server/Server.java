@@ -200,7 +200,7 @@ public class Server {
 
 	private void cmdNAMES(String to) {
 		Formatter output = getOutput(to);
-		String names = null;
+		String names = "";
 
 		Enumeration<String> keys = playerTable.keys();
 
@@ -208,7 +208,7 @@ public class Server {
 			names += (keys.nextElement() + ",");
 		}
 
-		System.out.println(names);
+		
 		output.format("NAMES %s\n", names);
 		output.flush();
 	}
@@ -216,6 +216,9 @@ public class Server {
 	private void cmdPRIVMSG(String from, String param) {
 		String params[] = param.split(" ", 3);
 		String to = params[0];
+		if (!hasNick(to)){
+			cmdERR(from, to + " wasn't found");
+		}
 		String message = params[2];
 		Formatter output = getOutput(to);
 		output.format("PRIVMSG %s %s %s\n", to, from, message);
