@@ -1,7 +1,5 @@
 package server;
 
-
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Iterator;
@@ -40,7 +39,7 @@ public class Server {
 		Socket socket;
 		try {
 			server = new ServerSocket(port);
-			log.log(String.format("Server running on %s and %d. port.", server
+			log.log(String.format("%s - Server running on %s and %d. port.",getDate(), server
 					.getInetAddress().getHostAddress(), port));
 			while (true) {
 				socket = server.accept();
@@ -77,9 +76,11 @@ public class Server {
 			try {
 
 				this.socket = socket;
-				this.output = new Formatter(new OutputStreamWriter(socket.getOutputStream()));
+				this.output = new Formatter(new OutputStreamWriter(
+						socket.getOutputStream()));
 				output.flush();
-				this.input = new Scanner(new InputStreamReader(socket.getInputStream()));
+				this.input = new Scanner(new InputStreamReader(
+						socket.getInputStream()));
 				nickAccepted = false;
 
 			} catch (IOException e) {
@@ -103,17 +104,19 @@ public class Server {
 				}
 
 				while ((inputMessage = input.nextLine()) != null) {
-					log.log(inputMessage);
+					log.log(String.format("%s - %s requested %s", getDate(), nick, inputMessage));
 					handleMessage(nick, inputMessage);
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				cmdDISCONNECT(nick);
+				closeConnection();
+				log.log(String.format("%s - %s DISCONNECTED.", getDate(), nick));
+			} catch (IllegalStateException e){
+				log.log(String.format("%s - %s DISCONNECTED.", getDate(), nick));
 			}
 
 		}
-		private void closeConnection(){
+
+		private void closeConnection() {
 			try {
 				output.close();
 				input.close();
@@ -122,6 +125,7 @@ public class Server {
 				e.printStackTrace();
 			}
 		}
+
 		private void cmdNICKSET(String nick) throws IOException {
 			if (hasNick(nick)) {
 				cmdERR(output, "Nick already in use");
@@ -133,9 +137,10 @@ public class Server {
 
 			playerTable.put(this.nick, this);
 			cmdNICKACCEPTED(output, nick);
-			cmdMSG("SERVER", String.format("SERVER %s connected to server.", nick));
+			cmdMSG("SERVER",
+					String.format("SERVER %s connected to server.", nick));
 
-			log.log(String.format("%s connectted to server.", nick));
+			log.log(String.format("%s - %s connectted to server.", getDate(), nick));
 		}
 
 	}
@@ -148,19 +153,20 @@ public class Server {
 
 	private void invokeMethod(String command, String from) throws Exception {
 		String name = "cmd" + command;
-		Class <? extends Server> c = this.getClass();
+		Class<? extends Server> c = this.getClass();
 		Method method = c.getDeclaredMethod(name, String.class);
 		method.invoke(this, from);
 	}
 
-	private void invokeMethod(String command, String from, String param) throws SecurityException,
-		NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException{
-		
+	private void invokeMethod(String command, String from, String param)
+			throws SecurityException, NoSuchMethodException,
+			IllegalArgumentException, IllegalAccessException,
+			InvocationTargetException {
+
 		String name = "cmd" + command;
-		
-		Class <? extends Server> s = this.getClass();
-		Method method = s.getDeclaredMethod(name, String.class,
-				String.class);
+
+		Class<? extends Server> s = this.getClass();
+		Method method = s.getDeclaredMethod(name, String.class, String.class);
 		method.invoke(this, from, param);
 	}
 
@@ -180,7 +186,7 @@ public class Server {
 	}
 
 	private void cmdDISCONNECT(String nick) {
-		
+		playerTable.get(nick).closeConnection();
 		playerTable.remove(nick);
 	}
 
@@ -208,7 +214,6 @@ public class Server {
 			names += (keys.nextElement() + ",");
 		}
 
-		
 		output.format("NAMES %s\n", names);
 		output.flush();
 	}
@@ -216,7 +221,7 @@ public class Server {
 	private void cmdPRIVMSG(String from, String param) {
 		String params[] = param.split(" ", 3);
 		String to = params[0];
-		if (!hasNick(to)){
+		if (!hasNick(to)) {
 			cmdERR(from, to + " wasn't found");
 		}
 		String message = params[2];
@@ -227,7 +232,7 @@ public class Server {
 
 	private void cmdERR(String to, String message) {
 		Formatter output = getOutput(to);
-		output.format("ERR %s\n", message );
+		output.format("ERR %s\n", message);
 		output.flush();
 	}
 
@@ -239,5 +244,11 @@ public class Server {
 	private Formatter getOutput(String nick) {
 		return playerTable.get(nick).output;
 	}
-
+	
+	private String getDate() {
+		String date = new Date().toString();
+		int index = date.indexOf(':');
+		date = '[' + date.substring(index - 2, index + 6) + ']';
+		return date;
+	}
 }
