@@ -44,10 +44,8 @@ public class Client {
 					String input;
 
 					try {
-						while (true) {
-							input = inputStream.readLine();
+						while ((input = inputStream.readLine()) != null) {
 							handleInput(input);
-
 						}
 					} catch (EOFException e) {
 						gui.displayError("Connection lost.");
