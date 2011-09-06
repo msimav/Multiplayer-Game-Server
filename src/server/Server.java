@@ -12,6 +12,8 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,9 +23,19 @@ import java.util.concurrent.Executors;
 public class Server {
 
 	private ServerSocket server;
+	
 	private ConcurrentHashMap<String, Player> playerTable;
 	private ExecutorService playerPool;
-
+	
+	//TODO:Oyun kuyrukları eklenecek.
+	private List chessQueue;
+	
+	//
+	private ConcurrentHashMap<String, List> gameTable;
+	
+	
+	
+	
 	private Log log;
 
 	private int port;
@@ -32,10 +44,21 @@ public class Server {
 		this.port = port;
 		this.playerTable = new ConcurrentHashMap<String, Player>();
 		this.playerPool = Executors.newCachedThreadPool();
+		initializeLog();
+		initializeQueues();
+	}
+	
+	public void initializeLog(){
 		log = new Log();
 		log.addPrintStream(System.out);
 	}
-
+	
+	public void initializeQueues(){
+		this.chessQueue = new LinkedList<Player>();
+		gameTable = new ConcurrentHashMap<String, List>();
+		gameTable.put("Chess", chessQueue);
+	}
+	
 	public void run() {
 		Socket socket;
 		try {
@@ -62,7 +85,7 @@ public class Server {
 		this.port = port;
 	}
 
-	private class Player implements Runnable {
+	public class Player implements Runnable {
 
 		private String nick;
 
@@ -187,7 +210,21 @@ public class Server {
 		}
 
 	}
+	
+	private void cmdGAMES(String nick){
+		Formatter output = getOutput(nick);
+		String games = "";
 
+		Enumeration<String> keys = gameTable.keys();
+
+		while (keys.hasMoreElements()) {
+			games += (keys.nextElement() + ",");
+		}
+
+		output.format("GAMES %s\n", games);
+		output.flush();
+	}
+	
 	private void cmdDISCONNECT(String nick) {
 		playerTable.get(nick).closeConnection();
 		playerTable.remove(nick);
@@ -260,5 +297,10 @@ public class Server {
 		int index = date.indexOf(':');
 		date = '[' + date.substring(index - 2, index + 6) + ']';
 		return date;
+	}
+	
+	public static void main(String args[]){
+		Server server = new Server(5556);
+		server.run();
 	}
 }
