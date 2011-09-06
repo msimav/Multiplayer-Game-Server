@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -99,7 +100,7 @@ public class Server {
 					params = inputMessage.split(" ");
 					if (params.length == 3 && params[0].equals("NICK")
 							&& params[1].equals("SET")) {
-						cmdNICKSET(params[2]);
+						cmdNICK(params[2]);
 					}
 				}
 
@@ -112,6 +113,8 @@ public class Server {
 				log.log(String.format("%s - %s DISCONNECTED.", getDate(), nick));
 			} catch (IllegalStateException e){
 				log.log(String.format("%s - %s DISCONNECTED.", getDate(), nick));
+			}catch (NoSuchElementException e){
+				cmdDISCONNECT(nick);
 			}
 
 		}
@@ -126,7 +129,7 @@ public class Server {
 			}
 		}
 
-		private void cmdNICKSET(String nick) throws IOException {
+		private void cmdNICK(String nick) throws IOException {
 			if (hasNick(nick)) {
 				cmdERR(output, "Nick already in use");
 				return;
@@ -225,7 +228,14 @@ public class Server {
 			cmdERR(from, to + " wasn't found");
 		}
 		String message = params[2];
+		
+		//Mesajı Alacak Kisiye
 		Formatter output = getOutput(to);
+		output.format("PRIVMSG %s %s %s\n", to, from, message);
+		output.flush();
+		
+		//Mesajı Yollayana
+		output = getOutput(from);
 		output.format("PRIVMSG %s %s %s\n", to, from, message);
 		output.flush();
 	}
